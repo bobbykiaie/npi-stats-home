@@ -1,0 +1,25 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- CreateTable
+CREATE TABLE [dbo].[SystemSettings] (
+    [id] NVARCHAR(1000) NOT NULL,
+    [key] NVARCHAR(1000) NOT NULL,
+    [value] NVARCHAR(1000) NOT NULL,
+    CONSTRAINT [SystemSettings_pkey] PRIMARY KEY CLUSTERED ([id]),
+    CONSTRAINT [SystemSettings_key_key] UNIQUE NONCLUSTERED ([key])
+);
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

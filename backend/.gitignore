@@ -1,0 +1,49 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Logs
+logs
+*.log
+*.out
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+
+# Local development image uploads
+/uploads/
+
+# Build
+dist/
+build/
+coverage/
+tmp/
+temp/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Misc
+*.swp
+*.bak
+*.tmp
+*.orig
+*.rej
+*.swo
+
+# Test
+test-results/
+jest-html-reporters-*.html

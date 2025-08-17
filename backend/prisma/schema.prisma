@@ -1,0 +1,225 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider          = "sqlserver"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model users {
+  user_id        Int      @id @default(autoincrement())
+  username       String   @unique @db.NVarChar(255)
+  password       String   @db.NVarChar(255)
+  role           String   @db.NVarChar(50)
+  
+  favoriteSpecs  UserFavoriteSpec[] // <-- ADD THIS LINE
+
+  activeBuilds   activeBuilds[]
+  inspectionLogs inspectionLogs[]
+}
+
+model UserFavoriteSpec {
+  user_id       Int
+  config_number String @db.NVarChar(255)
+  mp_number     String @db.NVarChar(255)
+  spec_name     String @db.NVarChar(255)
+
+  user users         @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  spec configMpSpecs @relation(fields: [config_number, mp_number, spec_name], references: [config_number, mp_number, spec_name], onDelete: Cascade)
+
+  @@id([user_id, config_number, mp_number, spec_name])
+}
+
+model products {
+  mvd_number     String           @id @db.NVarChar(255)
+  product_name   String           @db.NVarChar(255)
+  is_archived    Boolean          @default(false)
+  configurations configurations[]
+  rejects        ProductRejects[]
+}
+
+model configurations {
+  config_number            String                    @id @db.NVarChar(255)
+  mvd_number               String                    @db.NVarChar(255)
+  config_name              String                    @db.NVarChar(255)
+  buildRecords             buildRecords[]
+  config_mp_specs          configMpSpecs[]
+  product                  products                  @relation(fields: [mvd_number], references: [mvd_number], onDelete: Cascade)
+  lots                     lots[]
+  recipes                  ProcessRecipe[]
+  manufacturing_procedures manufacturingProcedures[] @relation("configurationsTomanufacturingProcedures")
+}
+
+model manufacturingProcedures {
+  mp_number         String              @id @db.NVarChar(255)
+  procedure_name    String              @db.NVarChar(255)
+  configMpSpecs     configMpSpecs[]
+  recipes           ProcessRecipe[]
+  rejectAssignments RejectAssignments[]
+  configurations    configurations[]    @relation("configurationsTomanufacturingProcedures")
+}
+
+model lots {
+  lot_number       String   @id @db.NVarChar(255)
+  ys_number        String?  @db.NVarChar(255)
+  config_number    String   @db.NVarChar(255)
+  quantity         Int
+  description      String?  @db.NVarChar(255)
+  is_excluded      Boolean  @default(false) // <-- ADD THIS LINE
+
+  inspectionLogs   inspectionLogs[]
+  processSetpoints LotProcessSetpoint[]
+  config           configurations @relation(fields: [config_number], references: [config_number])
+}
+
+model configMpSpecs {
+  config_number   String                  @db.NVarChar(255)
+  mp_number       String                  @db.NVarChar(255)
+  spec_name       String                  @db.NVarChar(255)
+  type            String                  @db.NVarChar(50)
+  upper_spec      Float?
+  lower_spec      Float?
+  nominal         Float?
+  attribute_value String?                 @db.NVarChar(255)
+
+  favoritedBy     UserFavoriteSpec[]
+  config          configurations          @relation(fields: [config_number], references: [config_number], onDelete: Cascade)
+  mp              manufacturingProcedures @relation(fields: [mp_number], references: [mp_number], onDelete: Cascade)
+  inspectionLogs  inspectionLogs[]
+
+  @@id([config_number, mp_number, spec_name])
+}
+
+model inspectionLogs {
+  log_id                      Int      @id @default(autoincrement())
+  username                    String   @db.NVarChar(255)
+  lot_number                  String   @db.NVarChar(255)
+  config_number               String   @db.NVarChar(255)
+  mp_number                   String   @db.NVarChar(255)
+  spec_name                   String   @db.NVarChar(255)
+  inspection_type             String   @db.NVarChar(255)
+  unit_number                 Int
+  inspection_value            Float?
+  pass_fail                   String   @db.NVarChar(10)
+  timestamp                   DateTime @default(now()) @db.DateTime
+  reject_code                 String?  @db.NVarChar(50)
+  process_parameters_snapshot String?  @db.NVarChar(Max)
+  image_url                   String?  @db.NVarChar(1024)
+  is_outlier                  Boolean  @default(false) // <-- ADD THIS LINE
+
+  spec configMpSpecs @relation(fields: [config_number, mp_number, spec_name], references: [config_number, mp_number, spec_name], onDelete: Cascade, onUpdate: NoAction)
+  lot  lots          @relation(fields: [lot_number], references: [lot_number], onUpdate: NoAction)
+  user users         @relation(fields: [username], references: [username], onUpdate: NoAction)
+}
+
+model activeBuilds {
+  build_id      Int      @id @default(autoincrement())
+  username      String   @db.NVarChar(255) // @unique was removed
+  lot_number    String   @db.NVarChar(255)
+  config_number String   @db.NVarChar(255)
+  mp_number     String   @db.NVarChar(255)
+  start_time    DateTime @default(now()) @db.DateTime
+  user          users    @relation(fields: [username], references: [username])
+}
+
+model buildRecords {
+  br_number     String         @id @db.NVarChar(255)
+  config_number String         @db.NVarChar(255)
+  configuration configurations @relation(fields: [config_number], references: [config_number])
+}
+
+model Equipment {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique @db.NVarChar(100)
+  description String?              @db.NVarChar(255)
+  parameters  EquipmentParameter[]
+  recipes     ProcessRecipe[]
+}
+
+model Parameter {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique @db.NVarChar(100)
+  description String?              @db.NVarChar(255)
+  equipment   EquipmentParameter[]
+  recipes     ProcessRecipe[]
+}
+
+model EquipmentParameter {
+  id           Int       @id @default(autoincrement())
+  equipment_id Int
+  parameter_id Int
+  equipment    Equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade)
+  parameter    Parameter @relation(fields: [parameter_id], references: [id], onDelete: Cascade)
+
+  @@unique([equipment_id, parameter_id])
+}
+
+model ProcessRecipe {
+  id               Int                     @id @default(autoincrement())
+  config_number    String                  @db.NVarChar(255)
+  mp_number        String                  @db.NVarChar(255)
+  equipment_id     Int
+  parameter_id     Int
+  nominal_setpoint Float
+  min_setpoint     Float
+  max_setpoint     Float
+  recipe_name      String
+  config           configurations          @relation(fields: [config_number], references: [config_number], onDelete: Cascade)
+  equipment        Equipment               @relation(fields: [equipment_id], references: [id])
+  mp               manufacturingProcedures @relation(fields: [mp_number], references: [mp_number], onDelete: Cascade)
+  parameter        Parameter               @relation(fields: [parameter_id], references: [id])
+
+  @@unique([config_number, mp_number, recipe_name, parameter_id])
+}
+
+
+
+model LotProcessSetpoint {
+  id               Int      @id @default(autoincrement())
+  lot_number       String   @db.NVarChar(255)
+  recipe_name      String   // <-- ADD THIS LINE
+  parameter_name   String   @db.NVarChar(100)
+  setpoint_value   Float
+
+  lot              lots     @relation(fields: [lot_number], references: [lot_number], onDelete: Cascade)
+  
+  // UPDATE the unique constraint to include the new field
+  @@unique([lot_number, recipe_name, parameter_name])
+}
+
+model RejectType {
+  id          Int              @id @default(autoincrement())
+  reject_code String           @unique @db.NVarChar(50)
+  description String           @db.NVarChar(255)
+  products    ProductRejects[]
+}
+
+model ProductRejects {
+  id          Int                 @id @default(autoincrement())
+  mvd_number  String              @db.NVarChar(255)
+  reject_code String              @db.NVarChar(50)
+  product     products            @relation(fields: [mvd_number], references: [mvd_number], onDelete: Cascade)
+  rejectType  RejectType          @relation(fields: [reject_code], references: [reject_code])
+  assignments RejectAssignments[]
+
+  @@unique([mvd_number, reject_code])
+}
+
+model RejectAssignments {
+  id                Int                     @id @default(autoincrement())
+  product_reject_id Int
+  mp_number         String                  @db.NVarChar(255)
+  mp                manufacturingProcedures @relation(fields: [mp_number], references: [mp_number])
+  productReject     ProductRejects          @relation(fields: [product_reject_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_reject_id, mp_number])
+}
+
+model SystemSettings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}

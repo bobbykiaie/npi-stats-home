@@ -1,0 +1,41 @@
+{
+  "name": "spc-tracking-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend for the SPC Tracking App, providing APIs for manufacturing data and statistical tests.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.7.0",
+    "@azure/identity": "^4.10.2",
+    "@azure/storage-blob": "^12.27.0",
+    "@prisma/client": "^6.10.1",
+    "axios": "^1.9.0",
+    "bcryptjs": "^3.0.2",
+    "cookie": "^1.0.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "jwk-to-pem": "^2.0.7",
+    "mssql": "^11.0.1",
+    "multer": "^2.0.1",
+    "openai": "^5.8.3",
+    "sqlite3": "^5.1.6",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prisma": "^6.10.1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "author": "Bobby",
+  "license": "MIT"
+}

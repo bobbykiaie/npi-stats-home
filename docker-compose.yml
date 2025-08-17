@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+      
+    volumes:
+      # This enables live reloading for frontend development
+      - ./frontend:/app
+      # This uses the node_modules from within the container
+      - /app/node_modules
+    environment:
+      # This helps file watching work reliably inside a Docker container
+      - CHOKIDAR_USEPOLLING=true
+    command: npm run dev
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+      - "192.168.1.20:9004:9004"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      # --- THIS IS THE ADDED LINE ---
+      # It maps a local 'uploads' folder to the container's '/app/uploads' directory,
+      # ensuring that images saved locally are not lost when the container stops.
+      - ./uploads:/app/uploads
+    env_file:
+      - ./backend/.env
+    command: ["./wait-for-sql.sh", "npm", "run", "dev"]
+    # Added depends_on to ensure the database starts before the backend
+    depends_on:
+      - sqlserver
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "Babolysconey1"
+      ACCEPT_EULA: "Y"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  sqlserver_data:
